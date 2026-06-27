@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050505" />
+  <title>BLACKFRAME V1.0 FINAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen">
+    <div class="load-mark">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <strong>BLACKFRAME</strong>
+    <p>Connect • Play • Share</p>
+  </div>
+
+  <section id="authScreen" class="auth-screen is-hidden" aria-label="Acceso a BlackFrame">
+    <div class="auth-backdrop"></div>
+    <div class="auth-card glass-panel">
+      <div class="brand-stack">
+        <span class="brand-orbit"></span>
+        <div>
+          <p class="eyebrow">BLACKFRAME V1.0 FINAL</p>
+          <h1>BLACKFRAME</h1>
+          <p class="tagline">Connect • Play • Share</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Acceso">
+        <button class="auth-tab is-active" data-auth-panel="login" type="button">Entrar</button>
+        <button class="auth-tab" data-auth-panel="register" type="button">Registro</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" autocomplete="on">
+        <label>
+          Usuario
+          <input id="loginUser" name="username" type="text" autocomplete="username" required placeholder="@usuario" />
+        </label>
+        <label>
+          Contraseña
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña" />
+        </label>
+        <label class="check-row">
+          <input id="rememberSession" type="checkbox" checked />
+          <span>Recordar sesión</span>
+        </label>
+        <button class="primary-btn" type="submit">Iniciar sesión</button>
+      </form>
+
+      <form id="registerForm" class="auth-form is-hidden" autocomplete="on">
+        <div class="two-fields">
+          <label>
+            Nombre
+            <input id="registerName" type="text" autocomplete="name" required placeholder="Tu nombre" />
+          </label>
+          <label>
+            Usuario
+            <input id="registerUser" type="text" autocomplete="username" required placeholder="@nuevo" />
+          </label>
+        </div>
+        <label>
+          Correo opcional
+          <input id="registerEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com" />
+        </label>
+        <label>
+          Contraseña
+          <input id="registerPassword" type="password" autocomplete="new-password" required minlength="4" placeholder="Mínimo 4 caracteres" />
+        </label>
+        <label>
+          Foto de perfil
+          <input id="registerAvatar" type="file" accept="image/*" />
+        </label>
+        <button class="primary-btn" type="submit">Crear cuenta</button>
+      </form>
+
+      <p class="auth-note">BlackFrame sincroniza datos con Supabase y mantiene cachÃ© local del navegador.</p>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell is-hidden">
+    <aside id="leftRail" class="left-rail glass-panel">
+      <a class="logo-lockup" href="#" data-view="feed" aria-label="BlackFrame inicio">
+        <span class="logo-core"></span>
+        <span>
+          <strong>BLACKFRAME</strong>
+          <small>Connect • Play • Share</small>
+        </span>
+      </a>
+
+      <nav id="primaryNav" class="primary-nav" aria-label="Navegación principal"></nav>
+
+      <button id="focusToggle" class="rail-command" type="button" data-action="toggle-focus">
+        <span class="command-icon">◐</span>
+        <span>Concentración</span>
+      </button>
+      <button class="rail-command danger-soft" type="button" data-action="logout">
+        <span class="command-icon">⏻</span>
+        <span>Cerrar sesión</span>
+      </button>
+    </aside>
+
+    <main class="main-stage">
+      <header class="topbar glass-panel">
+        <button class="icon-btn mobile-menu" type="button" data-action="toggle-mobile-menu" aria-label="Abrir menú">☰</button>
+        <div class="topbar-title">
+          <span id="viewKicker">Inicio</span>
+          <strong id="viewTitle">Feed</strong>
+        </div>
+        <label class="global-search">
+          <span>⌕</span>
+          <input id="globalSearch" type="search" placeholder="Buscar usuarios, posts, hashtags o reels" autocomplete="off" />
+        </label>
+        <button class="icon-btn" type="button" data-view="notifications" aria-label="Notificaciones">
+          <span>●</span>
+          <b id="notificationDot">0</b>
+        </button>
+        <button class="profile-chip" type="button" data-view="profile" aria-label="Mi perfil">
+          <span id="topAvatar" class="avatar-mini"></span>
+          <span id="topUsername">@usuario</span>
+        </button>
+      </header>
+
+      <section id="viewRoot" class="view-root" aria-live="polite"></section>
+    </main>
+
+    <aside id="rightRail" class="right-rail glass-panel"></aside>
+
+    <nav id="mobileNav" class="mobile-nav glass-panel" aria-label="Navegación móvil"></nav>
+  </div>
+
+  <div id="toastStack" class="toast-stack" aria-live="assertive"></div>
+  <div id="modalRoot" class="modal-root is-hidden" role="dialog" aria-modal="true"></div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
