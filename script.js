@@ -2,8 +2,8 @@
 
 const STORAGE_KEY = "blackframe.supabase.v1.db";
 const SESSION_KEY = "blackframe.supabase.v1.session";
-const SUPABASE_URL = "https://yommorwbssqpbplxexuj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_wHNYpUt87Y5tYnzS2o50yA_Cf-xJm0Z";
+const SUPABASE_URL = "https://ppsuqnjtsdvphrkjlbuq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_FvuCBMDKrUEMzRY3n6sc4Q_4mSh95T9";
 const SUPABASE_STATE_ID = "blackframe-main";
 const SUPABASE_MEDIA_BUCKET = "blackframe-media";
 const CONTENT_TTL_DAYS = 62;
