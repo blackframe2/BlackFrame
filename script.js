@@ -133,7 +133,48 @@ function hasMeaningfulData(snapshot) {
   );
 }
 
+function passwordInput(userId, password) {
+  return `${userId}:${password}`;
+}
+
+function stablePasswordHash(userId, password) {
+  const input = passwordInput(userId, password);
+  let h1 = 0x811c9dc5;
+  let h2 = 0x9e3779b9;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    h1 = Math.imul(h1 ^ code, 16777619);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  return `bf:${(h1 >>> 0).toString(16).padStart(8, "0")}${(h2 >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function legacyLocalPasswordHash(userId, password) {
+  return `local:${btoa(unescape(encodeURIComponent(passwordInput(userId, password))))}`;
+}
+
+async function legacyCryptoPasswordHash(userId, password) {
+  if (!window.crypto?.subtle) return "";
+  const input = passwordInput(userId, password);
+  const bytes = new TextEncoder().encode(input);
+  const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 async function hashPassword(userId, password) {
+  return stablePasswordHash(userId, password);
+}
+
+async function passwordMatches(user, password) {
+  const candidates = [
+    await hashPassword(user.id, password),
+    legacyLocalPasswordHash(user.id, password),
+    await legacyCryptoPasswordHash(user.id, password)
+  ].filter(Boolean);
+  return candidates.includes(user.passwordHash);
+}
+
+async function oldHashPassword(userId, password) {
   const input = `${userId}:${password}`;
   if (!window.crypto?.subtle) return `local:${btoa(unescape(encodeURIComponent(input)))}`;
   const bytes = new TextEncoder().encode(input);
@@ -143,7 +184,14 @@ async function hashPassword(userId, password) {
 
 async function verifyPassword(user, password) {
   if (!user) return false;
-  if (user.passwordHash) return user.passwordHash === await hashPassword(user.id, password);
+  if (user.passwordHash) {
+    const ok = await passwordMatches(user, password);
+    if (ok && !user.passwordHash.startsWith("bf:")) {
+      user.passwordHash = await hashPassword(user.id, password);
+      saveDatabase();
+    }
+    return ok;
+  }
   if (user.password && user.password === password) {
     user.passwordHash = await hashPassword(user.id, password);
     delete user.password;
