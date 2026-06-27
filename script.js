@@ -2,7 +2,7 @@
 
 const STORAGE_KEY = "blackframe.supabase.v1.db";
 const SESSION_KEY = "blackframe.supabase.v1.session";
-const SUPABASE_URL = "https://yommorwbssqpbplxexuj.supabase.co";
+const SUPABASE_URL = "https://TU_PROJECT_REF.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_wHNYpUt87Y5tYnzS2o50yA_Cf-xJm0Z";
 const SUPABASE_STATE_ID = "blackframe-main";
 const SUPABASE_MEDIA_BUCKET = "blackframe-media";
@@ -123,6 +123,16 @@ function emptyDatabase() {
   };
 }
 
+function hasMeaningfulData(snapshot) {
+  if (!snapshot) return false;
+  return Boolean(
+    (snapshot.users?.length || 0) ||
+    (snapshot.posts?.length || 0) ||
+    (snapshot.reels?.length || 0) ||
+    (snapshot.conversations?.length || 0)
+  );
+}
+
 async function hashPassword(userId, password) {
   const input = `${userId}:${password}`;
   if (!window.crypto?.subtle) return `local:${btoa(unescape(encodeURIComponent(input)))}`;
@@ -238,11 +248,12 @@ async function deleteStorageMedia(media) {
 async function loadDatabase() {
   state.serverUrl = SUPABASE_URL;
   const raw = localStorage.getItem(STORAGE_KEY);
+  const hasLocalDatabase = Boolean(raw);
   db = raw ? JSON.parse(raw) : seedDatabase();
   hydrateDatabase();
   pruneExpiredContent(false);
-  saveDatabase({ sync: false });
-  await pullDatabaseFromServer();
+  if (hasLocalDatabase) saveDatabase({ sync: false });
+  await pullDatabaseFromServer(false, { preferRemote: !hasLocalDatabase });
   subscribeRealtime();
 }
 
@@ -259,7 +270,7 @@ function scheduleServerSave() {
   serverSaveTimer = setTimeout(() => pushDatabaseToServer(), 900);
 }
 
-async function pullDatabaseFromServer(showToast = false) {
+async function pullDatabaseFromServer(showToast = false, options = {}) {
   if (!supabaseConfigured()) {
     state.serverOnline = false;
     state.serverMessage = "Falta pegar SUPABASE_URL";
@@ -279,13 +290,15 @@ async function pullDatabaseFromServer(showToast = false) {
       const localTime = new Date(db.updatedAt || 0).getTime();
       const remoteTime = new Date(remote.data.updatedAt || remote.updated_at || 0).getTime();
       remoteVersion = Number(remote.version || 0);
-      if (remoteTime >= localTime) {
+      const remoteHasData = hasMeaningfulData(remote.data);
+      const localHasData = hasMeaningfulData(db);
+      if (options.preferRemote || remoteTime >= localTime || (!localHasData && remoteHasData)) {
         db = remote.data;
         hydrateDatabase();
         pruneExpiredContent(false);
         saveDatabase({ sync: false });
         if (showToast) toast("Sincronizado", "Se cargaron datos desde Supabase.");
-      } else if (localTime > remoteTime) {
+      } else if (localTime > remoteTime && localHasData) {
         await pushDatabaseToServer(true);
       }
     } else {
@@ -304,6 +317,23 @@ async function pushDatabaseToServer(silent = false) {
   if (!supabaseConfigured() || !db) return false;
   try {
     pruneExpiredContent(false);
+    if (!hasMeaningfulData(db)) {
+      const { data: remote } = await sb
+        .from("blackframe_state")
+        .select("version,data,updated_at")
+        .eq("id", SUPABASE_STATE_ID)
+        .maybeSingle();
+      if (hasMeaningfulData(remote?.data)) {
+        db = remote.data;
+        remoteVersion = Number(remote.version || 0);
+        hydrateDatabase();
+        saveDatabase({ sync: false });
+        state.serverOnline = true;
+        state.serverMessage = "Supabase protegido";
+        if (!silent) renderServerStatusOnly();
+        return false;
+      }
+    }
     db.updatedAt = now();
     const nextVersion = remoteVersion + 1;
     const { error } = await sb.from("blackframe_state").upsert({
@@ -339,6 +369,7 @@ function subscribeRealtime() {
       const incoming = payload.new;
       if (!incoming?.data) return;
       if (Number(incoming.version || 0) <= remoteVersion) return;
+      if (!hasMeaningfulData(incoming.data) && hasMeaningfulData(db)) return;
       remoteVersion = Number(incoming.version || 0);
       db = incoming.data;
       hydrateDatabase();
